@@ -21,21 +21,52 @@ int maximal_allocation(){
             }
         }
         last_allocation = last_allocation/2;
-        count = last_allocation;
-        while(count>0){
-            f = (char*)malloc(last_allocation+count);
-            if(f!=NULL){
-                free(f);
-                last_allocation = last_allocation+count;
-            }else{
-                count = count/2;
-            }
+        f = (char*)malloc(last_allocation);
+        if(f!=NULL){
+            free(f);
+            return last_allocation;
+        }else{
+            printf("Error on allocatoin!\n");
         }
+
     }else{
         printf("This should never happen in this test case\n");
     }
     return last_allocation;
 }
+// int maximal_allocation(){
+//     int last_allocation = 1;
+//     char* f = (char*)malloc(last_allocation*1);
+//     int g = 1;
+//     int count = 0;
+    
+//     if(f!=NULL){
+//         free(f);
+//         while(g == 1){
+//             last_allocation = last_allocation*2;
+//             f = (char*)malloc(last_allocation);
+//             if(f!= NULL){
+//                 free(f);
+//             }else{
+//                 break;
+//             }
+//         }
+//         last_allocation = last_allocation/2;
+//         count = last_allocation;
+//         while(count>0){
+//             f = (char*)malloc(last_allocation+count);
+//             if(f!=NULL){
+//                 free(f);
+//                 last_allocation = last_allocation+count;
+//             }else{
+//                 count = count/2;
+//             }
+//         }
+//     }else{
+//         printf("This should never happen in this test case\n");
+//     }
+//     return last_allocation;
+// }
 
 void basicCoalescence(int last_allocation){
     //Basic Coalescence
@@ -70,6 +101,7 @@ int saturation(int* arr[]){
     while((arr[k] = (int*)malloc(sizeof(char))) != NULL) {
         k++;
     }
+    printf("k = %d\n", k);
     return k;
 }
 
@@ -81,6 +113,7 @@ void timeOverhead(int* arr[],int k){
     arr[k-1] = (int*)malloc(sizeof(char));
     clock_gettime(CLOCK_MONOTONIC, &endTimer);
     printf("\nTime for 1B allocation in saturated mem : %ld \n", endTimer.tv_nsec - beginTimer.tv_nsec);
+    // printf("Time for 1B allocation in saturated mem: %lu micro-seconds\n", (endTimer.tv_sec - beginTimer.tv_sec) * 1000 + (endTimer.tv_nsec - beginTimer.tv_nsec) / 1000000);
 }
 
 void intermediateCoalescence(int* arr[],int k,int maximalAllocation){
@@ -112,19 +145,20 @@ void consistency(){
     return;
 }
 int main(){
-    // char* a = (char*)malloc('a');
-    //     printMetadata();
+    struct timespec beginTimer, endTimer;
+    clock_gettime(CLOCK_MONOTONIC, &beginTimer);
 
-    // // printf("Allocation = %p", a);
-    // free(a);
-    // free(a);
-    // consistency();
+    consistency();
     int maxAllocation = maximal_allocation();
     printf("Maximal allocation is %d\n",maxAllocation);
-    // basicCoalescence(maxAllocation);
-    // int* arr[118000];
-    // int k = saturation(arr);
-    
-    // timeOverhead(arr,k);
-    // intermediateCoalescence(arr,k,maxAllocation);
+    basicCoalescence(maxAllocation);
+    int* arr[118000];
+    int k = saturation(arr);
+    timeOverhead(arr,k);
+    intermediateCoalescence(arr,k,maxAllocation);
+    clock_gettime(CLOCK_MONOTONIC, &endTimer);
+
+
+    printf("\nFinal Allocation Time: %ld milliseconds\n", (endTimer.tv_sec - beginTimer.tv_sec) * 1000 + (endTimer.tv_nsec - beginTimer.tv_nsec) / 1000000);
+
 }

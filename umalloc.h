@@ -5,6 +5,9 @@
 static char MEM[MEM_SIZE];
 
 
+//Define metadata size 
+//1 byte - used flag indicate if block is occupied or not.
+//4 byte - block size of following block available or occupied.
 typedef struct Metadata {
     unsigned int blockSize;
     char used;

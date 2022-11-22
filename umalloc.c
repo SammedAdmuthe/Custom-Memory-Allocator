@@ -8,6 +8,7 @@ int memoryInit = 0;
 
 
 char* next(char* curr) {
+   //Navigation mechanism to go to next blocks.
    char* follows = curr + ((Metadata*)curr)->blockSize + sizeof(Metadata);
    if(follows >= &MEM[MEM_SIZE]) {
       return NULL;
@@ -15,6 +16,7 @@ char* next(char* curr) {
    return follows;
 }
 void combine() {
+   //Combine multiple free blocks as one.
    char* currNode = &MEM[0];
    char* nextToCurr = NULL;
    //Travese from start and check for free spaces and combine them in one pass.
@@ -22,6 +24,7 @@ void combine() {
    size_t totalFreeSize = 0;
    while(currNode!=NULL && currNode < &MEM[MEM_SIZE]) {
       if(((Metadata*)currNode)->used == 'f') {
+         //nextToCurr -> pointer to next memory block
          nextToCurr = next(currNode);
          if(nextToCurr == NULL || nextToCurr >= &MEM[MEM_SIZE]) {
             return;
@@ -29,15 +32,18 @@ void combine() {
 
          totalFreeSize += ((Metadata*)nextToCurr)->blockSize + sizeof(Metadata);
          if(((Metadata*)nextToCurr)->used == 'f') {
+            //If next block is not occupied add cumulative block size to current pointer and change next pointer.
             ((Metadata*)currNode)->blockSize += totalFreeSize;
             totalFreeSize = 0;
             nextToCurr = next(nextToCurr);
          }
          else{
+            //If next block is occupied the just care to move current pointer as no cumulative addition is required.
             currNode = next(currNode);
          }
       }
       else {
+         //If current block is occupied just move current node to next block.
          currNode = next(currNode);
       }
    }
@@ -49,11 +55,9 @@ void* allocate(char* curr, size_t size) {
    size_t remainder = availableSize - reqSize;
 
    //update available block size as occupied and set block size equal to requested block size.
-   // ((Metadata *)curr)->used = 't';
-   // ((Metadata *)curr)->blockSize = size;
-   // printf("ReQSize = %ld, Avail = %ld, remainder = %ld", reqSize,availableSize,remainder);
+
    if(availableSize-size-1 >= sizeof(Metadata)){
-      // printf("HERERE222222222222222\n");
+      //If it is possible to create new allocate block for future allocation. i.e it fragment that would be created after allocation is big enough then run this code block.
       char* newMetadata = curr + reqSize;
       ((Metadata *)curr)->used = 't';
        ((Metadata *)curr)->blockSize = size;
@@ -62,31 +66,27 @@ void* allocate(char* curr, size_t size) {
       ((Metadata *)newMetadata)->blockSize = remainder;
    }
    else {
-      // printf("HERERE\n");
+      //If future data and metadata doesn't fit in a fragment that will be created by current allocation allocate whole of available size to current allocation.
       ((Metadata *)curr)->used = 't';
       ((Metadata *)curr)->blockSize = availableSize;
       
    }
 
-   // printf("In allocate %p\n", curr + sizeof(Metadata));
    return (void*)(curr + sizeof(Metadata));
 }
 
 
 void* umalloc(size_t size,char *file, int line) {
-   // printf("%d \n", sizeof(MEM));
 
    //check if requested size lies within MEM allocator.
    //Since we also have to allocate memory for metadata take care of that as well.
    if(size <= 0)
    {
       printf("%s : %d Error: Size requested is either 0 or negative\n", file, line);
-      //printf("Memory overflow!!\n");
       return NULL;
    }
    if(size > MEM_SIZE - sizeof(Metadata)) {
       printf("%s : %d Error: Memory overflow!!\n", file, line);
-      //printf("Memory overflow!!\n");
       return NULL;
    }
 
@@ -103,7 +103,7 @@ void* umalloc(size_t size,char *file, int line) {
    int fragMem = 0;
    char* itr = &MEM[0];
    size_t actualSize = size;
-   int blockSizeAvaliable = 0;
+   size_t blockSizeAvaliable = 0;
    while (itr < &MEM[MEM_SIZE] && itr!= NULL)
    {
       // printf("Block Size - %d  FLAG - %c\n", ((Metadata*)itr)->blockSize, ((Metadata*)itr)->used);
@@ -114,20 +114,16 @@ void* umalloc(size_t size,char *file, int line) {
                ((Metadata*)itr)->used = 't';
                return (void*)itr + sizeof(Metadata);
          }
-         //printf("This is needed");
          break;
       }
       else if(((Metadata*)itr) -> used == 'f' && ((Metadata*)itr)->blockSize < actualSize) {
+         //accumalate empty fragments.
          fragMem=fragMem+((Metadata*)itr)->blockSize;
       }
 
       itr = next(itr);
-      // if(itr == NULL){
-      //    printf("We got itr as null\n");
-      // }
    }
 
-   // printf("Value of itr %p\n", itr);
    if(itr == NULL) 
    {
       printf("Fragment size = %d\n", fragMem);
@@ -153,22 +149,16 @@ void* umalloc(size_t size,char *file, int line) {
 void ufree(void* addressToBeFreed, char *file, int line) {
    char *curr = &MEM[0];
    char* metadataToBeFreed = (char*)((char*)addressToBeFreed - sizeof(Metadata));
-   // printf("Metadata to be freed %d\n", metadataToBeFreed);
-   // printf("Is that metadata used?? %c\n", ((Metadata *)metadataToBeFreed)->used);
-   
+ 
    if(addressToBeFreed == NULL) {
       printf("%s : %d Error: Can't free for NULL\n", file, line);
-      //printf("Can't free for NULL\n");
       return;
    }
 
    //Check If address to be freed lies with MEM Allocator area 
    //if addressToBeFreed is less then make sure requested address doesnot lie within metadata.
-   //
-   //printf("address to be freed : %p\nMem 0 + size of metadata : %p\nlast address of mem : %p\n",(char*)addressToBeFreed,&MEM[0] + sizeof(Metadata),&MEM[MEM_SIZE]);
    if((char*)addressToBeFreed < &MEM[0] + sizeof(Metadata) || (char*)addressToBeFreed > &MEM[MEM_SIZE]) {
       printf("%s : %d Error: Can't be freed Memory : Out of bounds\n", file, line);
-      //printf("Can't be freed Memory : Out of bounds\n");
       return;
    }
 
@@ -193,35 +183,23 @@ void ufree(void* addressToBeFreed, char *file, int line) {
       
       curr = next(curr);
    }
-   //printf("Free not done due to internal error\n");
    return;
 }
-void printMetadata()
+//print metadata
+void prettyPrint()
 {
-    printf("**Printing Metadata***\n");
+    printf("=================Printing Metadata==========================\n");
    
-    char *temp = &MEM[0];
-      printf("first total allocation - %ld\n",sizeof(Metadata) + ((Metadata*)temp)->blockSize);
+    char *iterator = &MEM[0];
     int cnt=0;
     long tru =0;
     while(cnt < 5)
     {
-        printf("Metadata Address: %p\n", temp);
-        printf("Block Size: %d\n", ((Metadata*)temp)->blockSize);
-        printf("Block Allocated flag: %c\n", ((Metadata*)temp)->used);
-      //   if(((Metadata*)temp)->used == 't')
-      //    tru++;
-        temp = temp + sizeof(Metadata) + ((Metadata*)temp)->blockSize;
+        printf("Metadata Address: %p\n", iterator);
+        printf("Block Size: %d\n", ((Metadata*)iterator)->blockSize);
+        printf("Block Allocated flag: %c\n", ((Metadata*)iterator)->used);
+        iterator = iterator + sizeof(Metadata) + ((Metadata*)iterator)->blockSize;
         cnt++;
     }
-   //  printf("True flag count = %ld\n", tru);
-    printf("*****END******\n");
+    printf("=============================END================================\n");
 }
-// int main(){
-//     int*  a;
-//     free(a);
-//     free(a);
-//     // consistency();
-
-
-// }
