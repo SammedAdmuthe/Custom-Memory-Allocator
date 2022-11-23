@@ -3,9 +3,6 @@
 #include <time.h>
 #include "umalloc.h"
 
-int memoryInit = 0;
-
-
 
 char* next(char* curr) {
    //Navigation mechanism to go to next blocks.

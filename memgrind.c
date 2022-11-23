@@ -1,7 +1,7 @@
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "umalloc.c"
+#include "umalloc.h"
 
 int maximal_allocation(){
     int last_allocation = 1;
@@ -26,7 +26,7 @@ int maximal_allocation(){
             free(f);
             return last_allocation;
         }else{
-            printf("Error on allocatoin!\n");
+            printf("Error on allocation!\n");
         }
 
     }else{
@@ -72,12 +72,18 @@ void basicCoalescence(int last_allocation){
     //Basic Coalescence
    int last_allocation_ref = last_allocation/2;
    char* test_2 = (char*)malloc(last_allocation_ref);
+   printf("Allocated half memory\n");
    if(test_2!=NULL){
    	char* test_2_q = (char*)malloc(last_allocation/4);
+    printf("Allocated additional quarter memory\n");
    	if(test_2_q!=NULL){   		
    		free(test_2);
    		free(test_2_q);
+        printf("Freed allocated memory\n");
+
    		char* test_2_f = (char*)malloc(last_allocation);
+        printf("Max allocation done\n");
+
    		if(test_2_f!=NULL){
    			free(test_2_f);
    			printf("Basic Coalescence test success\n");
@@ -101,7 +107,7 @@ int saturation(int* arr[]){
     while((arr[k] = (int*)malloc(sizeof(char))) != NULL) {
         k++;
     }
-    printf("k = %d\n", k);
+    printf("Total number of allocations = %d\n", k);
     return k;
 }
 
@@ -112,7 +118,7 @@ void timeOverhead(int* arr[],int k){
     clock_gettime(CLOCK_MONOTONIC, &beginTimer);
     arr[k-1] = (int*)malloc(sizeof(char));
     clock_gettime(CLOCK_MONOTONIC, &endTimer);
-    printf("\nTime for 1B allocation in saturated mem : %ld \n", endTimer.tv_nsec - beginTimer.tv_nsec);
+    printf("\nTime for 1B allocation in saturated mem : %ld nano-seconds\n", endTimer.tv_nsec - beginTimer.tv_nsec);
     // printf("Time for 1B allocation in saturated mem: %lu micro-seconds\n", (endTimer.tv_sec - beginTimer.tv_sec) * 1000 + (endTimer.tv_nsec - beginTimer.tv_nsec) / 1000000);
 }
 
@@ -121,7 +127,9 @@ void intermediateCoalescence(int* arr[],int k,int maximalAllocation){
     for(int e = 0; e < k ; e++){
         free(arr[e]);
     }
+    printf("Freed allocated Memory\n");
     char* final_allocation = (char*)malloc(maximalAllocation);
+    printf("Maximum Memory allocated\n");
     if(final_allocation!=NULL){
         printf("Intermediate Coalescence Test Success!\n");   
         free(final_allocation);
@@ -140,6 +148,8 @@ void consistency(){
     if(first_allocation!=second_allocation){
         printf("Consistency test FAIL!\n");
     }else{
+        printf("Address of first allocation %p\n",first_allocation);
+        printf("Address of second allocation %p\n",second_allocation);
         printf("Consistency test PASS!\n");
     }
     return;
@@ -148,17 +158,36 @@ int main(){
     struct timespec beginTimer, endTimer;
     clock_gettime(CLOCK_MONOTONIC, &beginTimer);
 
+    printf("\n********* Consistency Test Start *********\n\n");
     consistency();
+    printf("\n********* Consistency Test End *********\n");
+    
+    printf("\n********* Maximal Allocation Test Start *********\n\n");
     int maxAllocation = maximal_allocation();
     printf("Maximal allocation is %d\n",maxAllocation);
+    printf("\n********* Maximal Allocation Test End *********\n");
+
+    printf("\n********* Basic Coalescence Test Start *********\n\n");
     basicCoalescence(maxAllocation);
+    printf("\n********* Basic Coalescence Test End *********\n");
+
+    printf("\n*********Saturation Test Start *********\n\n");
     int* arr[118000];
     int k = saturation(arr);
+    printf("\n********* Saturation Test End *********\n");
+
+
+    printf("\n********* Timeoverhead Test Start *********\n\n");
     timeOverhead(arr,k);
+    printf("\n********* Timeoverhead Test End *********\n");
+
+    printf("\n********* Intermediate Test Start *********\n\n");
     intermediateCoalescence(arr,k,maxAllocation);
+    printf("\n********* Intermediate Test End *********\n");
+
     clock_gettime(CLOCK_MONOTONIC, &endTimer);
 
 
-    printf("\nFinal Allocation Time: %ld milliseconds\n", (endTimer.tv_sec - beginTimer.tv_sec) * 1000 + (endTimer.tv_nsec - beginTimer.tv_nsec) / 1000000);
+    printf("\nOverall Test Time: %ld milliseconds\n", (endTimer.tv_sec - beginTimer.tv_sec) * 1000 + (endTimer.tv_nsec - beginTimer.tv_nsec) / 1000000);
 
 }
